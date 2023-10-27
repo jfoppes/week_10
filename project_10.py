@@ -4,27 +4,27 @@
 
 import csv
 import operator
+import time
+
 
 """ This program reports stock of items for a warehouse
     stock levels will be pulled from and saved to a CSV file"""
     
-'''Sample Data
-stockRoom = {"watch":7,"iphone":10,"macbook":4,"ipad":5,"pencil":0,"wband":0} # dictionary of procuts and stock levels 
-targetStock = {"watch":10,"iphone":15,"macbook":6,"ipad":5,"pencil":4,"wband":10} #dictionary or products and thier target stock 
-'''
 
 stockRoom = [] # dictionary of procuts and stock levels 
 inStock = []
 onOrder = {}
+prodCats = ["","phone","watch","laptop","tablet","desktop"]
 
-with open("stock.csv","r+") as s:# create lsit of products. each produt is a dictionairs 
-    reader = csv.DictReader(s)
-    for i in reader:
-        stockRoom.append(i)
-    for i in stockRoom:
-        i["Stock_Level"] = int(i["Stock_Level"])
-        i["Target_Stock"] = int(i["Target_Stock"])   
-
+def readStock(): # this function read the CSV file of stock levels and creates dictionaiores of each prodcut to add to the stockroom list 
+    with open("stock.csv","r+") as s:# create lsit of products. each produt is a dictionairs 
+        reader = csv.DictReader(s)
+        for i in reader:
+            stockRoom.append(i)
+        for i in stockRoom:
+            i["Stock_Level"] = int(i["Stock_Level"])
+            i["Target_Stock"] = int(i["Target_Stock"])   
+readStock()
 
 def weGotIt(): # this fuction determines what products are instock 
     global inStock
@@ -41,7 +41,8 @@ def checkStock(): # this fucntion check the instock levels vs the target stock l
             need = i["Target_Stock"] - i["Stock_Level"]
             onOrder[i["Product_Name"]] = need # create list of procut names and the numbe rthat needs to be ordered 
     print("\nWe need to order the following products\n",onOrder) # this returns          
-
+    time.sleep(1)
+    
 def inStockByCat():# this func takes a category as an input and output a list of produts in stock in that category
     allCats = []
     for i in inStock:
@@ -54,8 +55,19 @@ def inStockByCat():# this func takes a category as an input and output a list of
     for i in inStock:
         if i["Product_Category"]== cat:
             print(i["Product_Name"]+":",i["Stock_Level"],"in stock")
-def outOfStock():
-    pass  
+    time.sleep(1)
+def outOfStock(): # this function checs for items that are out of stock 
+    ooStock = []
+    for i in stockRoom:
+        if i["Stock_Level"] < 1:
+            ooStock.append(i)
+    print('''
+          The Following Items are out of stock:
+    ''')
+    for i in ooStock:
+        print(i["Product_Name"]+": "+str(i["Stock_Level"])+ " on hand")
+    time.sleep(2)
+            
 
 def stockLevel(): #This fuction will show stock level of all products or a requested product
     choice = int(input("""
@@ -65,22 +77,75 @@ def stockLevel(): #This fuction will show stock level of all products or a reque
                    (3) to View Out of Stock Items
                    """))
     if choice == 1:
-        print("\n\nWe have the following items in stock: \n",inStock)  
+        print("\n\nWe have the following items in stock: \n")
+        for i in inStock:
+            print(i["Product_Name"]+":",i["Stock_Level"],"on hand")
     elif choice == 2:
         inStockByCat()
     elif choice == 3:
         outOfStock()
 
-def newProduct(): # this fuction will allow a user to define a enw prodcut with a name, product category, and stock level 
-    pass
+def newProduct(prodType): # this fuction will allow a user to define a enw prodcut with a name, product category, and stock level 
+    
+    newThing = {}
+    newThing["Product_Name"]= input("""
+                                    Enter the Product Name:
+                                    """)
+    newThing["Product_Category"]= prodType
+    
+    try:
+        newThing["Stock_Level"]= int(input("""
+                                    Enter the current Stock Level:
+                                    """))
+    except:
+        print("Stock level must be an integer. Try again ")
+    try:
+        newThing["Target_Stock"]= int(input("""
+                                    Enter the Target Stock Level:
+                                    """))
+    except:
+        print("Stock level must be an integer. Try again ")
+        
 
-def incommingShipment(): # this fuction will allow a user to update/increment stock levels 
-    pass
+    with open("stock.csv","a",newline="") as stocklevs: #open player wokedex file 
+        writer = csv.DictWriter(stocklevs,fieldnames=newThing.keys())
+        writer.writerow(newThing)
+        stocklevs.close()
+
+def incommingShipment(prodType): # this fuction will allow a user to update/increment stock levels 
+    recievingTypes = [] # list of products within the 
+    for i in stockRoom:
+        if i["Product_Category"] == prodType:
+            recievingTypes.append(i["Product_Name"]) 
+    choice = input("""
+                   Which Product are you recieving:
+                   {Prods}""".format(Prods=recievingTypes))
+    if choice not in recievingTypes:
+        print("Please make a valid choice")
+        incommingShipment(prodType)
+    else:
+        ammount = int(input("""
+                            How many are you recieving?
+                            """))
+        newTotal = 0  
+        for i in stockRoom:
+            if i["Product_Name"] == choice:
+                i["Stock_Level"] +=ammount
+                newTotal = i["Stock_Level"]
+    print("""Input Succesfull:
+          {name}: {amount} on hand
+          """.format(name=choice,amount=newTotal))
+    
+    with open("stock.csv","a",newline="") as stocklevs: #open player wokedex file 
+        writer = csv.DictWriter(stocklevs,fieldnames=newThing.keys())
+        writer.writerow(newThing)
+        stocklevs.close()
 
 def deleteProduct(): #This fuction will allow a user to delete a product they no longer sell 
     pass
 
 def welcome(): # This fuction is where the user will be able to choose what they want to do 
+    readStock()
     choice = int(input("""
                    ***Welcome to Inventory Controll***
                    
@@ -95,9 +160,38 @@ def welcome(): # This fuction is where the user will be able to choose what they
     if choice == 1:
         stockLevel()
     elif choice == 2:
-        incommingShipment()
+        prodType = int(input("""
+                       Choose a product category:
+                       (1) Phone
+                       (2) Watch
+                       (3) Laptop
+                       (4) Tablet
+                       (5) Desktop
+                       (6) to go back
+                       
+                       """))
+        if prodType == 1 or 2 or 3 or 4 or 5:
+            incommingShipment(prodCats[prodType]) # run incomming shoipmetn fucntion for slected product category type 
+        elif prodType == 6:
+            welcome()
+        else:
+            print("Make a valid choice")  
     elif choice == 3:
-        newProduct()
+        prodType = int(input("""
+          What Product Type would you like to add to the catalog?
+          (1) Phone
+          (2) Watch
+          (3) Laptop
+          (4) Tablet
+          (5) Desktop
+          (6) to go back 
+          """))
+        if prodType == 1 or 2 or 3 or 4 or 5:
+            newProduct(prodCats[prodType])# run new product funct for selesfted product type 
+        elif prodType == 6:
+            welcome()
+        else:
+            print("Make a valid choice")  
     elif choice == 4:
         deleteProduct()
 while True:
