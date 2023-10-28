@@ -39,6 +39,7 @@ def checkStock(): # this fucntion check the instock levels vs the target stock l
         if i["Stock_Level"] < i["Target_Stock"]: # if the instock quantity is less than that target stock, add the item to the onOrder lsit wit hthe number we need to order
             need = i["Target_Stock"] - i["Stock_Level"]
             onOrder[i["Product_Name"]] = need # create list of procut names and the numbe rthat needs to be ordered 
+    onOrder = dict(reversed(sorted(onOrder.items(), key=operator.itemgetter(1)))) # sort dict based on numer that needs to be ordered 
     print("\nWe need to order the following products\n",onOrder) # this returns          
     time.sleep(1)
     stockLevel()
@@ -76,8 +77,9 @@ def stockLevel(): #This fuction will show stock level of all products or a reque
                    How would you like to view stock?
                    (1) for All In Stock Products
                    (2) to choose a specific Product Category
-                   (3) to View Out of Stock Items
-                   (4) to exit
+                   (3) to see items running low
+                   (4) to View Out of Stock Items
+                   (5) to exit
                    """))
     if choice == 1:
         print("\n\nWe have the following items in stock: \n")
@@ -87,8 +89,10 @@ def stockLevel(): #This fuction will show stock level of all products or a reque
     elif choice == 2:
         inStockByCat()
     elif choice == 3:
-        outOfStock()
+        checkStock()
     elif choice == 4:
+        outOfStock()
+    elif choice == 5:
         welcome()
     else:
         print("""
